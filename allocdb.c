@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "config.h"
 #include <htable.h>
@@ -13,6 +14,7 @@
 struct allocdb_t {
     htable_t *allocs;
     htable_t *backtraces;
+    pthread_mutex_t mtx;
 };
 
 static allocdb_bt_t *allocdb_newbt(void **bt, int bt_len) {
@@ -87,6 +89,7 @@ void allocdb_log_alloc(allocdb_t *db, void *addr, size_t size) {
     bt_len = get_backtrace(bt, DMM_MAX_BACKTRACE_LEN);
     assert(bt_len != 0);
 
+    pthread_mutex_lock(&db->mtx);
     p = (allocdb_bt_t *)htable_get(db->backtraces, bt, bt_len);
     if (p == NULL) {
         //first allocation
@@ -96,15 +99,18 @@ void allocdb_log_alloc(allocdb_t *db, void *addr, size_t size) {
 
     a = allocdb_newalloc(addr, size, p);
     htable_push(db->allocs, &a->e);
+    pthread_mutex_unlock(&db->mtx);
 }
 
 void allocdb_log_release(allocdb_t *db, void *addr) {
     allocdb_alloc_t *a;
     allocdb_bt_t *p;
 
+    pthread_mutex_lock(&db->mtx);
 
     a = (allocdb_alloc_t *)htable_get(db->allocs, &addr, sizeof(addr));
     if (a == NULL) {
+        pthread_mutex_unlock(&db->mtx);
         void *bt[DMM_MAX_BACKTRACE_LEN];
         int bt_len;
         bt_len = get_backtrace(bt, DMM_MAX_BACKTRACE_LEN);
@@ -123,6 +129,7 @@ void allocdb_log_release(allocdb_t *db, void *addr) {
         allocdb_freebt(p);
     }
 
+    pthread_mutex_unlock(&db->mtx);
 }
 
 void allocdb_log_realloc(allocdb_t *db, void *old_addr, void *new_addr, size_t new_size) {
@@ -140,6 +147,7 @@ allocdb_t *allocdb_create() {
     db->allocs = htable_new(DMM_HTABLE_SIZE);
     db->backtraces = htable_new(DMM_HTABLE_SIZE);
     assert(db->allocs != NULL && db->backtraces != NULL);
+    pthread_mutex_init(&db->mtx, NULL);
 
     D(printf("%s: Allocate tables\n", __func__));
     return db;
@@ -149,6 +157,8 @@ allocdb_t *allocdb_create() {
 void allocdb_release(allocdb_t *db) {
     htable_delete(db->allocs, (void (*)(struct htable_entry_t *))allocdb_freealloc);
     htable_delete(db->backtraces, (void (*)(struct htable_entry_t *))allocdb_freebt);
+    pthread_mutex_destroy(&db->mtx);
+    free(db);
     D(printf("%s: Release tables\n", __func__));
 }
 
@@ -161,16 +171,18 @@ static void allocdb_print(htable_entry_t *e) {
 
     print_backtrace(e->key, e->key_len);
     printf("  TOTAL ALLOCS: %zu\n", p->allocs_num);
-    a = p->allocs;
-    while (a != NULL) {
-        printf("    ALLOC: [%p, %zd]\n", *((void **)a->e.key), a->size);
-        a = a->next;
-    }
+    /* a = p->allocs; */
+    /* while (a != NULL) { */
+    /*     printf("    ALLOC: [%p, %zd]\n", *((void **)a->e.key), a->size); */
+    /*     a = a->next; */
+    /* } */
 }
 
 void allocdb_dump(allocdb_t *db) {
     printf("++ALLOCATIONS\n");
+    pthread_mutex_lock(&db->mtx);
     htable_foreach(db->backtraces, allocdb_print);
+    pthread_mutex_unlock(&db->mtx);
     printf("--ALLOCATIONS\n");
 }
 
