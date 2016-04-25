@@ -1,23 +1,34 @@
-#ARCH=/usr/local/armhf/r26/bin/arm-axis-linux-gnueabihf-
+# export ARCH=/usr/local/armhf/r26/bin/arm-axis-linux-gnueabihf-
+#
+# export CC=$(ARCH)gcc
+# export AS=$(ARCH)as
+# export LD=$(ARCH)ld
 
-
-CC=$(ARCH)gcc
-AS=$(ARCH)as
-LD=$(ARCH)ld
-
-#for AXIS ARM:
-#CFLAGS+=-mapcs-frame
+#for ARM APCS frame pointers:
+# CFLAGS+=-mapcs-frame
 
 CFLAGS+=-fPIC -Wall -ggdb3 -Iexternal
-LDFLAGS+=-fPIC -shared -ldl -ggdb3
-ASFILES+=
+MY_LDFLAGS=-fPIC -shared -ldl -ggdb3
 
-all: libdmm.so
 OBJ-y=dmm.o backtrace.o tlocker.o hooks_stdlib.o symhelper.o allocdb.o \
 	external/elfhacks.o external/htable.o
 
-libdmm.so: $(OBJ-y)
-	$(CC) $(LDFLAGS) -o $@ $^
+PHONY+=all
+all: libdmm.so
 
+libdmm.so: $(OBJ-y)
+	$(CC) $(MY_LDFLAGS) $(LDFLAGS) -o $@ $^
+
+PHONY+=tests
+tests:
+	$(MAKE) -C tests
+
+PHONY+=clean
 clean:
 	rm -f *.o external/*.o libdmm.so
+
+PHONY+=distclean
+distclean: clean
+	$(MAKE) -C tests clean
+
+.PHONY: $(PHONY)
