@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Ray Dudu <raydudu@gmail.com>
+ * Copyright (c) 2013-2016 Ray Dudu
  *
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -127,6 +127,28 @@ htable_entry_t *htable_pop(htable_t *table, void *key, size_t key_len) {
             else printf("%s h:%04x(NULL)\n", __func__, hash));
 
     return e;
+}
+
+void htable_scrap(htable_t *table, htable_entry_t *entry) {
+    unsigned hash;
+    htable_entry_t *e;
+
+    hash = _hash((unsigned *)entry->key, entry->key_len, table->size);
+    e = table->entries[hash];
+
+    if (e == NULL) {
+        return;
+    }
+
+    if (e == entry) {
+        table->entries[hash] = e->next;
+    } else while (e->next != NULL) {
+        if (e->next == entry) {
+            e->next = entry->next;
+            break;
+        }
+        e = e->next;
+    }
 }
 
 void htable_delete(htable_t *table, void (*entry_free)(htable_entry_t *)) {
