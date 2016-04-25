@@ -30,3 +30,10 @@
 
 # Debug files
 *.dSYM/
+
+# Test applications:
+tests/htable_test
+tests/myalloc1
+tests/prog1
+tests/prog2
+

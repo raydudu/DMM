@@ -1,8 +1,7 @@
-#CFLAGS+=-mapcs-frame
-CFLAGS+=-g
-#LDFLAGS+=-mapcs-frame
+CFLAGS+=-ggdb3
+LDFLAGS+=-ggdb3
 
-TESTS=prog1 htable_test
+TESTS=prog1 prog2 myalloc1 htable_test
 all: $(TESTS)
 
 htable.o: ../external/htable.c

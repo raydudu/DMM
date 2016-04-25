@@ -10,6 +10,7 @@ static htable_entry_t *new_entry(char *key, char *val){
     e->key = key;
     e->key_len = strlen(key);
     e->data = val;
+    return e;
 }
 
 static htable_entry_t *print_valget(htable_t *ht, char *key) {
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
 
     htable_dump(ht);
 
-    htable_delete(ht, free);
+    htable_delete(ht, (void (*)(struct htable_entry_t *))free);
 
     return 0;
 }
