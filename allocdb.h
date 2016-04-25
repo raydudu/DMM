@@ -2,20 +2,25 @@
 #define __ALLOCDB_H__
 
 #include <stdlib.h>
+#include <htable.h>
 
 typedef struct allocdb_t allocdb_t;
+typedef struct allocdb_alloc_t allocdb_alloc_t;
+typedef struct allocdb_bt_t allocdb_bt_t;
 
-typedef struct allocdb_allocation_t {
-    struct allocdb_allocation_t *next;
-    void *addr;
-    size_t size;
-} allocdb_allocation_t;
-
-typedef struct allocdb_place_t {
-    /* backtrace is stored as a key in htable_entry_t */
+struct allocdb_bt_t {
+    htable_entry_t e; /* must be first element */
     size_t allocs_num;
-    allocdb_allocation_t *allocs;
-} allocdb_place_t;
+    allocdb_alloc_t *allocs;
+};
+
+struct allocdb_alloc_t {
+    htable_entry_t e; /* must be first element */
+    size_t size;
+    allocdb_bt_t *backtrace;
+    allocdb_alloc_t *next;
+    allocdb_alloc_t *prev;
+};
 
 allocdb_t *allocdb_create();
 
