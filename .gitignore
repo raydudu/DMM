@@ -36,4 +36,4 @@ tests/htable_test
 tests/myalloc1
 tests/prog1
 tests/prog2
-
+tests/prog3
