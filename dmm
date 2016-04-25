@@ -1,0 +1,5 @@
+#!/bin/sh
+
+export G_DEBUG=gc-friendly
+export G_SLICE=always-malloc
+LD_PRELOAD=./libdmm.so $@
