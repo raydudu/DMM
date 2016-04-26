@@ -5,7 +5,7 @@
 
 #define THREADS 16
 #define POOL_SIZE 1024
-#define MAX_ALLOC (1024 * 1024)
+#define MAX_ALLOC (1024)
 
 #define D(x) 
 
