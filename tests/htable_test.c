@@ -6,10 +6,10 @@
 
 static htable_entry_t *new_entry(char *key, char *val){
     htable_entry_t *e;
-    e = malloc(sizeof(htable_entry_t));
+    e = malloc(sizeof(htable_entry_t) +sizeof(val));
     e->key = key;
     e->key_len = strlen(key);
-    e->data = val;
+    e->data[0] = val;
     return e;
 }
 
@@ -20,7 +20,7 @@ static htable_entry_t *print_valget(htable_t *ht, char *key) {
     if (e == NULL){
         printf("KeyGET: %s == NULL\n", key);
     } else {
-        printf("KeyGET: %s == %s\n", key, (char *)e->data);
+        printf("KeyGET: %s == %s\n", key, (char *)e->data[0]);
     }
     return e;
 }
@@ -32,7 +32,7 @@ static void print_valpop(htable_t *ht, char *key) {
     if (e == NULL){
         printf("KeyPOP: %s == NULL\n", key);
     } else {
-        printf("KeyPOP: %s == %s\n", key, (char *)e->data);
+        printf("KeyPOP: %s == %s\n", key, (char *)e->data[0]);
         free(e);
     }
 

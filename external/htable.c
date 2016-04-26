@@ -37,13 +37,13 @@ struct htable_t {
     size_t size;
 };
 
-static unsigned _hash(unsigned *key, size_t key_len, size_t size) {
-    unsigned hash = 0;
+static unsigned long _hash(unsigned long *key, size_t key_len, size_t size) {
+    unsigned long hash = 0;
     int len = key_len / sizeof(hash);
     int rem = key_len % sizeof(hash) - 1;
 
     while (rem >= 0) {
-        hash += ((unsigned)(((char *)(key + len))[rem])) << rem * 8;
+        hash += ((unsigned long)(((char *)(key + len))[rem])) << rem * 8;
         rem--;
     }
     len--;
@@ -73,9 +73,9 @@ htable_t *htable_new(size_t size) {
 }
 
 void htable_push(htable_t *table, htable_entry_t *entry) {
-    unsigned hash;
+    unsigned long hash;
 
-    hash = _hash((unsigned *)entry->key, entry->key_len, table->size);
+    hash = _hash((unsigned long *)entry->key, entry->key_len, table->size);
 
     entry->next = table->entries[hash];
     table->entries[hash] = entry;
@@ -83,10 +83,10 @@ void htable_push(htable_t *table, htable_entry_t *entry) {
 }
 
 htable_entry_t *htable_get(htable_t *table, void *key, size_t key_len) {
-    unsigned hash;
+    unsigned long hash;
     htable_entry_t *e;
 
-    hash = _hash((unsigned *)key, key_len, table->size);
+    hash = _hash((unsigned long *)key, key_len, table->size);
     e = table->entries[hash];
 
     while (e != NULL) {
@@ -102,11 +102,11 @@ htable_entry_t *htable_get(htable_t *table, void *key, size_t key_len) {
 }
 
 htable_entry_t *htable_pop(htable_t *table, void *key, size_t key_len) {
-    unsigned hash;
+    unsigned long hash;
     htable_entry_t *e;
     htable_entry_t *pe;
 
-    hash = _hash((unsigned *)key, key_len, table->size);
+    hash = _hash((unsigned long *)key, key_len, table->size);
     e = table->entries[hash];
     pe = NULL;
 
@@ -130,10 +130,10 @@ htable_entry_t *htable_pop(htable_t *table, void *key, size_t key_len) {
 }
 
 void htable_scrap(htable_t *table, htable_entry_t *entry) {
-    unsigned hash;
+    unsigned long hash;
     htable_entry_t *e;
 
-    hash = _hash((unsigned *)entry->key, entry->key_len, table->size);
+    hash = _hash((unsigned long *)entry->key, entry->key_len, table->size);
     e = table->entries[hash];
 
     if (e == NULL) {
