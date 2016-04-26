@@ -8,6 +8,7 @@
 #include "backtrace.h"
 #include "symhelper.h"
 #include "allocdb.h"
+#include "config.h"
 
 #ifdef __GNUC__
 #define likely(x)       __builtin_expect(!!(x), 1)
@@ -25,8 +26,9 @@ static void *(*libc_malloc)(size_t) = NULL;
 static void (*libc_free)(void *) = NULL;
 static void *(*libc_calloc)(size_t nmemb, size_t size) = NULL;
 static void *(*libc_realloc)(void *ptr, size_t size) = NULL;
+static void *(*libc_memalign)(size_t alignment, size_t size) = NULL;
 
-static int lock_and_find(void **sym, char *name) {
+static inline int lock_and_find(void **sym, char *name) {
     int lock = tlocker_acquire();
 
     if (unlikely(*sym == NULL)) {
@@ -92,7 +94,7 @@ void *calloc(size_t nmemb, size_t size) {
     return p;
 }
 
-void *realloc(void *ptr, size_t size){
+void *realloc(void *ptr, size_t size) {
     void *p;
     if (!lock_and_find((void **)&libc_realloc, "realloc")) {
         return libc_realloc(ptr, size);
@@ -119,14 +121,66 @@ exit:
     return p;
 }
 
-void hooks_stdlib_release() {
+void *memalign(size_t alignment, size_t size) {
+    void *p;
 
+    if (!lock_and_find((void **)&libc_memalign, "memalign")) {
+        return libc_memalign(alignment, size);
+    }
+
+    D(printf("++memalign(%zd)\n", size));
+    p = libc_memalign(alignment, size);
+    if (p != NULL) {
+        allocdb_log_alloc(allocs, p, size);
+    }
+    D(printf("--memalign %p\n", p));
+
+    tlocker_release();
+
+    return p;
+}
+
+void *pvalloc(size_t size) {
+    /* TODO: proper implementaiton */
+    return memalign(DMM_DEFAULT_ALIGNMENT, size);
+}
+
+int posix_memalign(void **memptr, size_t alignment, size_t size) {
+    /* TODO: proper implementaiton */
+    *memptr = memalign(DMM_DEFAULT_ALIGNMENT, size);
+    return 0;
+}
+
+void *aligned_alloc(size_t alignment, size_t size) {
+    /* TODO: proper implementaiton */
+    return memalign(DMM_DEFAULT_ALIGNMENT, size);
+}
+
+void *valloc(size_t size) {
+    /* TODO: proper implementaiton */
+    return memalign(DMM_DEFAULT_ALIGNMENT, size);
+}
+
+void stdlib_init() {
+}
+
+int stdlib_snapshot(FILE *fd) {
     tlocker_acquire();
 
     if (allocs != NULL) {
         allocdb_dump(allocs);
+    }
+
+    tlocker_release();
+}
+
+void stdlib_release(){
+    tlocker_acquire();
+
+    if (allocs != NULL) {
         allocdb_release(allocs);
         allocs = NULL;
     }
+
     tlocker_release();
 }

@@ -165,7 +165,7 @@ void allocdb_release(allocdb_t *db) {
 
 static void allocdb_print(htable_entry_t *e) {
     allocdb_bt_t *p;
-    allocdb_alloc_t *a;
+    /* allocdb_alloc_t *a; */
 
     p = (allocdb_bt_t *)e;
 
