@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include <execinfo.h>
 #include <assert.h>
 
@@ -15,6 +16,9 @@ void print_backtrace(void **addr, int len) {
     free(symbollist);
 }
 
+static void out_of_stack_marker() {
+};
+
 #ifdef DMM_OWN_BACKTRACE
 #  ifdef __arm__
 /* long fp = *(topfp - 3);
@@ -22,28 +26,42 @@ void print_backtrace(void **addr, int len) {
  * long lr = *(topfp - 1);
  * long pc = *(topfp - 0);
  */
+
+//assuming stack is less than 64k
+#define STACK_ADDR_MASK (((1UL << 16) - 1) << (CHAR_BIT * sizeof(unsigned long) - 16))
+
 int get_backtrace(void **addr, int len) {
     int i;
-    long *topfp;
+    unsigned long **topfp;
+    unsigned long sp;
 
     assert(addr != NULL && len > 0);
 
     /* topfp = get_fp(); */
-    asm volatile("mov %[fp], fp" : [fp] "=r" (topfp));
+    asm volatile("mov %[topfp], fp" : [topfp] "=r" (topfp));
+    asm volatile("mov %[sp], sp" : [sp] "=r" (sp));
+    sp &= STACK_ADDR_MASK;
 
     /* Top frame */
-    addr[0] = (void *)*(topfp); /* pc */
+    //addr[0] = *(topfp); /* pc */
 
     /* Middle frames */
-    for (i = 0; i < len && *(topfp - 3) != 0; i++) {
-        addr[i] = (void *)*(topfp - 1); /* lr */
-        topfp = (long *)(*(topfp - 3)); /* fp */
+    for (i = 0; i < len; i++) {
+        if (((unsigned long)topfp & STACK_ADDR_MASK) != sp) {
+            //out of stack
+            addr[i] = &out_of_stack_marker;
+            break;
+        }
+
+        if (*(topfp - 3) == NULL) {
+            addr[i] = *(topfp); /* pc */
+            break;
+        }
+
+        addr[i] = *(topfp - 1); /* lr */
+        topfp = (unsigned long **)*(topfp - 3); /* fp */
     }
 
-    /* Top frame */
-    if (i != len) {
-        addr[i] = (void *)*(topfp); /* pc */
-    }
     return i;
 }
 #  else
