@@ -171,17 +171,23 @@ void htable_delete(htable_t *table, void (*entry_free)(htable_entry_t *)) {
     free(table);
 }
 
-void htable_foreach(htable_t *table, htable_callback_fn callback) {
+int htable_foreach(htable_t *table, htable_callback_fn callback, void *context) {
     size_t i;
+    int ret = -1;
+
     for (i = 0; i < table->size; i++) {
         if (table->entries[i] != NULL) {
             htable_entry_t *e = table->entries[i];
             while (e != NULL) {
-                callback(e);
+                ret = callback(e, context);
+                if (ret != 0) {
+                    break;
+                }
                 e = e->next;
             }
         }
     }
+    return ret;
 }
 
 #ifdef HTABLE_DEBUG

@@ -16,6 +16,6 @@
 
 #define DMM_DEFAULT_ALIGNMENT sizeof(unsigned long)
 
-#define DMM_DEFAULT_DUMP_LOCATION "/tmp"
+#define DMM_DEFAULT_DUMP_LOCATION "./"
 
 #endif /* __CONFIG_H__ */

@@ -165,13 +165,16 @@ void stdlib_init() {
 }
 
 int stdlib_snapshot(FILE *fd) {
+    int ret = -1;
     tlocker_acquire();
 
     if (allocs != NULL) {
-        allocdb_dump(allocs);
+        ret = allocdb_dump(allocs, fd, "STDLIB");
     }
 
     tlocker_release();
+
+    return ret;
 }
 
 void stdlib_release(){

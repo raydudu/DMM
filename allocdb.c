@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include <htable.h>
+#include <json2f.h>
 #include "backtrace.h"
 #include "allocdb.h"
 
@@ -163,26 +164,49 @@ void allocdb_release(allocdb_t *db) {
 }
 
 
-static void allocdb_print(htable_entry_t *e) {
-    allocdb_bt_t *p;
-    /* allocdb_alloc_t *a; */
+static int allocdb_print(htable_entry_t *e, json2f_t *jd) {
+    allocdb_bt_t *p = (allocdb_bt_t *)e;
+    allocdb_alloc_t *a;
+    char **bt;
 
-    p = (allocdb_bt_t *)e;
+    json2f_obj(jd);
+        json2f_namedarr(jd, "backtrace");
+            bt = get_backtrace_symbols(p->e.key, p->e.key_len);
+            json2f_arr_str(jd, bt, p->e.key_len);
+            free(bt);
+        json2f_arr_end(jd);
+        json2f_long(jd, "allocations_amount", p->allocs_num);
+        json2f_namedarr(jd, "allocations");
+            for(a = p->allocs; a != NULL; a = a->next){
+                json2f_arr(jd);
+                    json2f_arr_ulong(jd,  ((unsigned long *)a->e.key), 1);
+                    json2f_arr_ulong(jd, &(a->size), 1);
+                json2f_arr_end(jd);
+            }
+        json2f_arr_end(jd);
+    json2f_obj_end(jd);
 
-    print_backtrace(e->key, e->key_len);
-    printf("  TOTAL ALLOCS: %zu\n", p->allocs_num);
-    /* a = p->allocs; */
-    /* while (a != NULL) { */
-    /*     printf("    ALLOC: [%p, %zd]\n", *((void **)a->e.key), a->size); */
-    /*     a = a->next; */
-    /* } */
+    return json2f_geterr(jd);
 }
 
-void allocdb_dump(allocdb_t *db) {
-    printf("++ALLOCATIONS\n");
-    pthread_mutex_lock(&db->mtx);
-    htable_foreach(db->backtraces, allocdb_print);
-    pthread_mutex_unlock(&db->mtx);
-    printf("--ALLOCATIONS\n");
+int allocdb_dump(allocdb_t *db, FILE *fd, char *subsys) {
+    json2f_t jd;
+    int ret;
+
+    D(printf("++%s\n", __func__));
+    json2f_init(&jd, fd);
+
+    json2f_obj(&jd);
+        json2f_str(&jd, "subsystem", subsys);
+        json2f_namedarr(&jd, "allocations");
+
+            pthread_mutex_lock(&db->mtx);
+            ret = htable_foreach(db->backtraces, (htable_callback_fn)allocdb_print, &jd);
+            pthread_mutex_unlock(&db->mtx);
+
+        json2f_arr_end(&jd);
+    json2f_obj_end(&jd);
+    printf("--%s\n", __func__);
+    return ret;
 }
 

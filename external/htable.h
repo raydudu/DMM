@@ -36,7 +36,7 @@ typedef struct htable_entry_t {
 
 typedef struct htable_t htable_t;
 
-typedef void (*htable_callback_fn)(htable_entry_t *);
+typedef int (*htable_callback_fn)(htable_entry_t *, void *context);
 
 htable_t *htable_new(size_t size);
 void htable_push(htable_t *table, htable_entry_t *entry);
@@ -46,7 +46,7 @@ void htable_scrap(htable_t *table, htable_entry_t *entry);
 
 void htable_delete(htable_t *table, void (*entry_free)(htable_entry_t *));
 
-void htable_foreach(htable_t *table, htable_callback_fn);
+int htable_foreach(htable_t *table, htable_callback_fn, void *context);
 
 #ifdef HTABLE_DEBUG
 void htable_dump(htable_t *table);

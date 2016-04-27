@@ -2,6 +2,7 @@
 #define __ALLOCDB_H__
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <htable.h>
 
 typedef struct allocdb_t allocdb_t;
@@ -29,6 +30,6 @@ void allocdb_log_release(allocdb_t *db, void *addr);
 void allocdb_log_realloc(allocdb_t *db, void *old_addr, void *new_addr, size_t new_size);
 void allocdb_release(allocdb_t *db);
 
-void allocdb_dump(allocdb_t *db);
+int allocdb_dump(allocdb_t *db, FILE *fd, char *subsys);
 
 #endif

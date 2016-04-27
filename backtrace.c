@@ -6,9 +6,13 @@
 
 #include "config.h"
 
+char **get_backtrace_symbols(void **addr, int len) {
+    return backtrace_symbols(addr, len);
+}
+
 void print_backtrace(void **addr, int len) {
     int i;
-    char **symbollist = backtrace_symbols(addr, len);
+    char **symbollist = get_backtrace_symbols(addr, len);
 
     for(i = 0; i < len && addr[i] != NULL; i++) {
         printf("[%02d]: %s\n", i, symbollist[i]);
@@ -16,7 +20,7 @@ void print_backtrace(void **addr, int len) {
     free(symbollist);
 }
 
-static void out_of_stack_marker() {
+static void __attribute__ ((unused)) out_of_stack_marker() {
 };
 
 #ifdef DMM_OWN_BACKTRACE
@@ -27,8 +31,9 @@ static void out_of_stack_marker() {
  * long pc = *(topfp - 0);
  */
 
-//assuming stack is less than 64k
-#define STACK_ADDR_MASK (((1UL << 16) - 1) << (CHAR_BIT * sizeof(unsigned long) - 16))
+//assuming stack is less than 2048k
+//TODO use getrlimit(RLIMIT_STACK ... or parse /proc/self/maps
+#define STACK_ADDR_MASK (((1UL << 16) - 1) << (CHAR_BIT * sizeof(unsigned long) - 21))
 
 int get_backtrace(void **addr, int len) {
     int i;

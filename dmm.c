@@ -19,7 +19,7 @@ static void dmm_make_snapshot(int sig) {
     FILE *fd;
     int save_error = 0;
 
-    snprintf(fn, FNAME_MAX_LEN, "%s/dmm_%d_%d.json", dumps_location, pid, dump_seq);
+    snprintf(fn, FNAME_MAX_LEN, "%s/dmm_%d_%04d.json", dumps_location, pid, dump_seq);
     printf("Saving allocation snapshot to: %s\n", fn);
     fd = fopen(fn, "w");
     if (fd == NULL) {

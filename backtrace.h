@@ -3,5 +3,6 @@
 
 int get_backtrace(void **addr, int len);
 void print_backtrace(void **addr, int len);
+char **get_backtrace_symbols(void **addr, int len);
 
 #endif /* __BACKTRACE_H__ */
