@@ -37,3 +37,6 @@ tests/myalloc1
 tests/prog1
 tests/prog2
 tests/prog3
+tests/backtrace_test
+tests/json2f_test
+

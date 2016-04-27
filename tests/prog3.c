@@ -64,7 +64,7 @@ void *thread_job(void *arg) {
         }
     }
 
-    printf("Still allocated: %d\n", count);
+    printf("Still allocated: %lu\n", count);
     return (void *)count;
 }
 
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
             tcount +=retval;
         }
     }
-    printf("Total still alloacted: %d\n", tcount);
+    printf("Total still alloacted: %lu\n", tcount);
 
     return 0;
 
