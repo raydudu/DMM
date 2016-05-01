@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include <string.h>
+#include <wchar.h>
 
 #include "tlocker.h"
 #include "backtrace.h"
@@ -27,6 +28,9 @@ static void (*libc_free)(void *) = NULL;
 static void *(*libc_calloc)(size_t nmemb, size_t size) = NULL;
 static void *(*libc_realloc)(void *ptr, size_t size) = NULL;
 static void *(*libc_memalign)(size_t alignment, size_t size) = NULL;
+static char *(*libc_strdup)(const char *s) = NULL;
+static char *(*libc_strndup)(const char *s, size_t n) = NULL;
+static wchar_t *(*libc_wcsdup)(const wchar_t *s) = NULL;
 
 static inline int lock_and_find(void **sym, char *name) {
     int lock = tlocker_acquire();
@@ -42,6 +46,7 @@ static inline int lock_and_find(void **sym, char *name) {
     return lock;
 }
 
+#undef malloc
 void *malloc(size_t size) {
     void *p;
 
@@ -61,6 +66,7 @@ void *malloc(size_t size) {
     return p;
 }
 
+#undef free
 void free(void *ptr) {
 
     if (!lock_and_find((void **)&libc_free, "free")) {
@@ -75,6 +81,7 @@ void free(void *ptr) {
     tlocker_release();
 }
 
+#undef calloc
 void *calloc(size_t nmemb, size_t size) {
     void *p;
 
@@ -94,6 +101,7 @@ void *calloc(size_t nmemb, size_t size) {
     return p;
 }
 
+#undef realloc
 void *realloc(void *ptr, size_t size) {
     void *p;
     if (!lock_and_find((void **)&libc_realloc, "realloc")) {
@@ -121,6 +129,7 @@ exit:
     return p;
 }
 
+#undef memalign
 void *memalign(size_t alignment, size_t size) {
     void *p;
 
@@ -140,25 +149,90 @@ void *memalign(size_t alignment, size_t size) {
     return p;
 }
 
+#undef pvalloc
 void *pvalloc(size_t size) {
     /* TODO: proper implementaiton */
     return memalign(DMM_DEFAULT_ALIGNMENT, size);
 }
 
+#undef posix_memalign
 int posix_memalign(void **memptr, size_t alignment, size_t size) {
     /* TODO: proper implementaiton */
     *memptr = memalign(DMM_DEFAULT_ALIGNMENT, size);
     return 0;
 }
 
+#undef aligned_alloc
 void *aligned_alloc(size_t alignment, size_t size) {
     /* TODO: proper implementaiton */
     return memalign(DMM_DEFAULT_ALIGNMENT, size);
 }
 
+#undef valloc
 void *valloc(size_t size) {
     /* TODO: proper implementaiton */
     return memalign(DMM_DEFAULT_ALIGNMENT, size);
+}
+
+#undef strdup
+char *strdup(const char *s) {
+    void *p;
+
+    if (!lock_and_find((void **)&libc_strdup, "strdup")) {
+        return libc_strdup(s);
+    }
+
+    D(printf("++strdup(%s)\n", s));
+    p = libc_strdup(s);
+    if (p != NULL) {
+        allocdb_log_alloc(allocs, p, strlen(p));
+    }
+    D(printf("--strdup %p\n", p));
+
+    tlocker_release();
+
+    return p;
+}
+
+#undef strndup
+char *strndup(const char *s, size_t n) {
+    void *p;
+
+    if (!lock_and_find((void **)&libc_strndup, "strndup")) {
+        return libc_strndup(s, n);
+    }
+
+    D(printf("++strndup(%s, %zd)\n", s, n));
+    p = libc_strndup(s, n);
+    if (p != NULL) {
+        allocdb_log_alloc(allocs, p, strlen(p));
+    }
+    D(printf("--strdup %p\n", p));
+
+    tlocker_release();
+
+    return p;
+}
+
+#undef wcsdup
+wchar_t *wcsdup(const wchar_t *s) {
+    void *p;
+
+    if (!lock_and_find((void **)&libc_wcsdup, "wcsdup")) {
+        return libc_wcsdup(s);
+    }
+
+    D(printf("++wstrdup(%s)\n", s));
+    p = libc_wcsdup(s);
+    if (p != NULL) {
+        allocdb_log_alloc(allocs, p, wcslen(p));
+    }
+    D(printf("--strdup %p\n", p));
+
+    tlocker_release();
+
+    return p;
+
 }
 
 void stdlib_init() {
