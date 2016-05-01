@@ -6,6 +6,7 @@
 
 #for ARM APCS frame pointers:
 # CFLAGS+=-mapcs-frame
+CFLAGS += -fno-omit-frame-pointer
 
 CFLAGS+=-fPIC -Wall -ggdb3 -Iexternal
 MY_LDFLAGS=-fPIC -shared -ldl -ggdb3

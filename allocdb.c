@@ -112,12 +112,12 @@ void allocdb_log_release(allocdb_t *db, void *addr) {
     a = (allocdb_alloc_t *)htable_get(db->allocs, &addr, sizeof(addr));
     if (a == NULL) {
         pthread_mutex_unlock(&db->mtx);
-        void *bt[DMM_MAX_BACKTRACE_LEN];
-        int bt_len;
-        bt_len = get_backtrace(bt, DMM_MAX_BACKTRACE_LEN);
-        assert(bt_len != 0);
-        D(printf("%s: Release of nonregistered alloc\n", __func__));
-        print_backtrace(bt, bt_len);
+        /* void *bt[DMM_MAX_BACKTRACE_LEN]; */
+        /* int bt_len; */
+        /* bt_len = get_backtrace(bt, DMM_MAX_BACKTRACE_LEN); */
+        /* assert(bt_len != 0); */
+        /* D(printf("%s: Release of nonregistered alloc\n", __func__)); */
+        /* print_backtrace(bt, bt_len); */
         //TODO: error condition, add to separate list?
         return;
     }
@@ -180,7 +180,7 @@ static int allocdb_print(htable_entry_t *e, json2f_t *jd) {
             for(a = p->allocs; a != NULL; a = a->next){
                 json2f_arr(jd);
                     json2f_arr_ulong(jd,  ((unsigned long *)a->e.key), 1);
-                    json2f_arr_ulong(jd, &(a->size), 1);
+                    json2f_arr_ulong(jd, (unsigned long *)&(a->size), 1); //favoring ulong to suppot all platforms
                 json2f_arr_end(jd);
             }
         json2f_arr_end(jd);

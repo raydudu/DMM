@@ -19,7 +19,7 @@ static void dmm_make_snapshot(int sig) {
     FILE *fd;
     int save_error = 0;
 
-    snprintf(fn, FNAME_MAX_LEN, "%s/dmm_%d_%04d.json", dumps_location, pid, dump_seq);
+    snprintf(fn, FNAME_MAX_LEN, "%s/dmm_%d_%04d.jdmm", dumps_location, pid, dump_seq);
     printf("Saving allocation snapshot to: %s\n", fn);
     fd = fopen(fn, "w");
     if (fd == NULL) {
@@ -57,10 +57,11 @@ static void __attribute__((constructor)) dmm_construct(void) {
     }
 
     pid = getpid();
-    if (signal(SIGUSR2, dmm_make_snapshot) == SIG_ERR) {
+    //TODO: add check if SIGRTMIN + 5 exceeds SIGRTMAX
+    if (signal(DMM_DUMP_SIGNALNO, dmm_make_snapshot) == SIG_ERR) {
         printf ("WARNING: fail to registers signal handler, only resulting dump will be generated\n");
     } else {
-        printf("To generate allocation snapshot please execute: kill -USR2 %d\n", pid);
+        printf("To generate allocation snapshot please execute: kill -%d %d\n", DMM_DUMP_SIGNALNO, pid);
     }
 
     stdlib_init();
