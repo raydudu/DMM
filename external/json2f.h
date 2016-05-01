@@ -88,6 +88,16 @@ void inline json2f_int(json2f_t *jd, char *name, int i) {
     jd->delim = ',';
 }
 
+void inline json2f_uint(json2f_t *jd, char *name, unsigned int ui) {
+    if (jd->error) {
+        return;
+    }
+    if(fprintf(jd->fd, "%c\"%s\":%u", jd->delim, name, ui) < 0) {
+        jd->error = errno;
+    }
+    jd->delim = ',';
+}
+
 void inline json2f_long(json2f_t *jd, char *name, long l) {
     if (jd->error) {
         return;
@@ -142,7 +152,7 @@ void inline json2f_arr(json2f_t *jd) {
     if (jd->error) {
         return;
     }
-    if(fprintf(jd->fd, "%c\[", jd->delim) < 0) {
+    if(fprintf(jd->fd, "%c[", jd->delim) < 0) {
         jd->error = errno;
     }
     jd->delim = ' ';
@@ -152,7 +162,7 @@ void inline json2f_arr_end(json2f_t *jd) {
     if (jd->error) {
         return;
     }
-    if (fprintf(jd->fd, "]") < 0) {
+    if (fprintf(jd->fd, "]\n") < 0) {
         jd->error = errno;
     }
     jd->delim = ',';
@@ -179,6 +189,20 @@ void inline json2f_arr_int(json2f_t *jd, int *arr, int len) {
     }
     for (i = 0; i < len; i++) {
         if (fprintf(jd->fd, "%c%d", jd->delim, arr[i]) < 0) {
+            jd->error = errno;
+            break;
+        }
+        jd->delim = ',';
+    }
+}
+
+void inline json2f_arr_uint(json2f_t *jd, unsigned int *arr, int len) {
+    int i;
+    if (jd->error) {
+        return;
+    }
+    for (i = 0; i < len; i++) {
+        if (fprintf(jd->fd, "%c%u", jd->delim, arr[i]) < 0) {
             jd->error = errno;
             break;
         }

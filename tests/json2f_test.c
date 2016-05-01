@@ -1,3 +1,7 @@
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "../external/json2f.h"
 
 #define FILENAME "./test.json"
@@ -23,7 +27,7 @@ int main(int argc, char **argv) {
 		    // empty array
         json2f_arr_end(&jd);
         json2f_namedarr(&jd, "arraY");
-            int long il= 12123131213L;
+            int long il= 121231313L;
             json2f_arr_long(&jd, &il, 1);
             char *sp = "arr val 1";
             json2f_arr_str(&jd, &sp, 1);
