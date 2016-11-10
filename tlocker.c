@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <assert.h>
@@ -40,8 +41,9 @@ int tlocker_acquire() {
         return 1;
     }
     pthread_mutex_unlock(&mtx);
-    D(printf("LOCK FAILED for %d\n", ctid));
-    return 0;
+    printf("LOCK FAILED for %d\n", ctid);
+    abort();
+    return -1;
 //TODO: fixme
 }
 

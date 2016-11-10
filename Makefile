@@ -1,8 +1,9 @@
 # export ARCH=/usr/local/armhf/r26/bin/arm-axis-linux-gnueabihf-
+# export ARCH=/usr/local/mipsisa32r2el/r27/bin/mipsisa32r2el-axis-linux-gnu-
 #
-# export CC=$(ARCH)gcc
-# export AS=$(ARCH)as
-# export LD=$(ARCH)ld
+export CC=$(ARCH)gcc
+export AS=$(ARCH)as
+export LD=$(ARCH)ld
 
 #for ARM APCS frame pointers:
 # CFLAGS+=-mapcs-frame

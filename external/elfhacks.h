@@ -47,6 +47,9 @@ extern "C" {
 #ifdef __arm__
 # define __elf32
 #endif
+#ifdef __mips__
+# define __elf32
+#endif
 
 #ifdef __elf64
 # define ELFW_R_SYM ELF64_R_SYM

@@ -32,26 +32,33 @@ static char *(*libc_strdup)(const char *s) = NULL;
 static char *(*libc_strndup)(const char *s, size_t n) = NULL;
 static wchar_t *(*libc_wcsdup)(const wchar_t *s) = NULL;
 
-static inline int lock_and_find(void **sym, char *name) {
-    int lock = tlocker_acquire();
+void stdlib_init() {
+    libc_calloc = find_sym("*libc.so*", "calloc");
+    libc_malloc = find_sym("*libc.so*", "malloc");
+    libc_free = find_sym("*libc.so*", "free");
+    libc_realloc = find_sym("*libc.so*", "realloc");
+    libc_memalign = find_sym("*libc.so*", "memalign");
+    libc_strdup = find_sym("*libc.so*", "strdup");
+    libc_strndup = find_sym("*libc.so*", "strndup");
+    libc_wcsdup = find_sym("*libc.so*", "wcsdup");
 
-    if (unlikely(*sym == NULL)) {
-        *sym = find_sym("*libc.so*", name);
-    }
+    //TODO: error checks
 
-    if (unlikely(allocs == NULL && lock)) {
+    if (allocs == NULL) {
         allocs = allocdb_create();
     }
-
-    return lock;
 }
 
 #undef malloc
 void *malloc(size_t size) {
     void *p;
 
-    if (!lock_and_find((void **)&libc_malloc, "malloc")) {
+    if (!tlocker_acquire()) { //already aquired
         return libc_malloc(size);
+    }
+
+    if (unlikely(libc_malloc == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++malloc(%zd)\n", size));
@@ -68,9 +75,12 @@ void *malloc(size_t size) {
 
 #undef free
 void free(void *ptr) {
-
-    if (!lock_and_find((void **)&libc_free, "free")) {
+    if (!tlocker_acquire()) { //already aquired
         return libc_free(ptr);
+    }
+
+    if (unlikely(libc_free == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++free(%p)\n", ptr));
@@ -85,8 +95,21 @@ void free(void *ptr) {
 void *calloc(size_t nmemb, size_t size) {
     void *p;
 
-    if (!lock_and_find((void **)&libc_calloc, "calloc")) {
+    if (!tlocker_acquire()) { //already aquired
+        if (libc_calloc == NULL) {
+            /* dlsym multithread issue. _dlerror_run function tries to allocate
+             * buffer for struct dl_action_result. According to current implementaiton
+             * if NULL will be returned, code will try to reallocate buffer during next call,
+             * so relaying on that.
+             */
+            printf("dlsym calloc infinite loop workaround triggered\n");
+            return NULL;
+        }
         return libc_calloc(nmemb, size);
+    }
+
+    if (unlikely(libc_calloc == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++calloc(%zd, %zd)\n",nmemb, size));
@@ -104,8 +127,13 @@ void *calloc(size_t nmemb, size_t size) {
 #undef realloc
 void *realloc(void *ptr, size_t size) {
     void *p;
-    if (!lock_and_find((void **)&libc_realloc, "realloc")) {
+
+    if (!tlocker_acquire()) { //already aquired
         return libc_realloc(ptr, size);
+    }
+
+    if (unlikely(libc_realloc == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++realloc(%p, %zd)\n", ptr, size));
@@ -133,8 +161,12 @@ exit:
 void *memalign(size_t alignment, size_t size) {
     void *p;
 
-    if (!lock_and_find((void **)&libc_memalign, "memalign")) {
+    if (!tlocker_acquire()) { //already aquired
         return libc_memalign(alignment, size);
+    }
+
+    if (unlikely(libc_realloc == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++memalign(%zd)\n", size));
@@ -178,8 +210,12 @@ void *valloc(size_t size) {
 char *strdup(const char *s) {
     void *p;
 
-    if (!lock_and_find((void **)&libc_strdup, "strdup")) {
+    if (!tlocker_acquire()) { //already aquired
         return libc_strdup(s);
+    }
+
+    if (unlikely(libc_realloc == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++strdup(%s)\n", s));
@@ -198,8 +234,12 @@ char *strdup(const char *s) {
 char *strndup(const char *s, size_t n) {
     void *p;
 
-    if (!lock_and_find((void **)&libc_strndup, "strndup")) {
+    if (!tlocker_acquire()) { //already aquired
         return libc_strndup(s, n);
+    }
+
+    if (unlikely(libc_realloc == NULL)) {
+        stdlib_init();
     }
 
     D(printf("++strndup(%s, %zd)\n", s, n));
@@ -218,11 +258,15 @@ char *strndup(const char *s, size_t n) {
 wchar_t *wcsdup(const wchar_t *s) {
     void *p;
 
-    if (!lock_and_find((void **)&libc_wcsdup, "wcsdup")) {
+    if (!tlocker_acquire()) { //already aquired
         return libc_wcsdup(s);
     }
 
-    D(printf("++wstrdup(%s)\n", s));
+    if (unlikely(libc_realloc == NULL)) {
+        stdlib_init();
+    }
+
+    D(printf("++wstrdup(%S)\n", s));
     p = libc_wcsdup(s);
     if (p != NULL) {
         allocdb_log_alloc(allocs, p, wcslen(p));
@@ -233,9 +277,6 @@ wchar_t *wcsdup(const wchar_t *s) {
 
     return p;
 
-}
-
-void stdlib_init() {
 }
 
 int stdlib_snapshot(FILE *fd) {
