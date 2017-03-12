@@ -34,9 +34,7 @@
 # Test applications:
 tests/htable_test
 tests/myalloc1
-tests/prog1
-tests/prog2
-tests/prog3
+tests/prog?
 tests/backtrace_test
 tests/json2f_test
 

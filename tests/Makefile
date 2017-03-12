@@ -1,7 +1,7 @@
 CFLAGS+=-ggdb3 -fno-omit-frame-pointer
 LDFLAGS+=-ggdb3
 
-TESTS=prog1 prog2 prog3 myalloc1 htable_test backtrace_test json2f_test tls_verify
+TESTS=prog1 prog2 prog3 prog4 myalloc1 htable_test backtrace_test json2f_test tls_verify
 all: $(TESTS)
 
 htable.o: ../external/htable.c
